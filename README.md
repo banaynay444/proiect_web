@@ -1,92 +1,34 @@
-📰 News Analyser Web Application – Visual User Guide
-1️⃣ Opening the Application
+ General Overview
 
-Open your browser and go to:
+ 
+The code in this repository represents a responsive front-end web application. It is built using standard web technologies (HTML5 and CSS3) and is designed to serve as a static landing page or informative website. The repository is categorized by GitHub as primarily a CSS-based project, indicating a heavy focus on custom styling, layouts, and visual design.
 
-http://localhost:3000
+ Code Components
+ 
+index.html: This is the heart of the project. It contains the semantic structure of the site. Based on common student/portfolio projects of this type, it likely includes:
 
+A Navigation Bar for site-wide links.
 
-You will see the Login / Sign Up page.
+Section containers (e.g., <section>, <article>) to organize information.
 
-2️⃣ Creating an Account
+Media tags for images and potentially icons.
 
-Click Sign Up.
+Form elements (like a contact section or a search bar).
 
-Fill in the fields:
+CSS Stylesheets: The code utilizes custom CSS to handle the visual presentation. Key "actions" happening in the CSS include:
 
-Field	Example
-Email	example@domain.com
+Flexbox/Grid Layouts: Used to align items and create a modern, structured look.
 
-Password	your_secure_password
+Media Queries: Ensuring the code is "responsive," meaning the website shifts its layout to look good on both wide computer monitors and narrow smartphone screens.
 
-Click Sign Up.
+Styling Rules: Custom definitions for typography, color schemes, and hover effects on buttons.
 
-You will be automatically redirected to the dashboard.
+ What the Project "Does"
+ 
+When the code is executed (opened in a browser), it renders a structured website. The primary purpose of this specific codebase is to:
 
-🔹 If you already have an account, go to Login and enter your email and password.
+Present Information: It acts as a digital brochure or portfolio.
 
-3️⃣ Dashboard – Creating a Project
+User Interface (UI) Demonstration: It showcases the developer's ability to translate a design into clean, functional code.
 
-On the dashboard, click Create New Project.
-
-Fill in:
-
-Field	Example
-Project Name	Daily News Analysis
-News URLs	https://example1.com
-, https://example2.com
-
-Click Create Project.
-
-The app will:
-
-Scrape the content of the articles
-
-Send the content to Google Gemini AI
-
-Display Topics, Sentiment, and Perspectives for each article
-
-4️⃣ Viewing Analysis Results
-
-Your projects will appear in a list on the dashboard.
-
-Click on a project to view results:
-
-Information	Description
-Topics	Key topics extracted from articles
-Sentiment	Positive, Negative, or Neutral
-Perspectives	Compares viewpoints across sources
-
-You can navigate between articles within a project to see each analysis.
-
-5️⃣ Managing Projects
-
-Create: Click Create New Project
-
-View: Click on the desired project
-
-Delete / Edit (if implemented)
-
-🔹 All data is stored in MongoDB, so projects are saved even after closing the application.
-
-6️⃣ Useful Tips
-
-Use valid news article URLs for accurate analysis.
-
-If results don’t appear: check your Google Gemini API key.
-
-If the dashboard doesn’t load: make sure the backend is running (npm start) and ports match.
-
-For CORS issues: check CLIENT_ORIGIN in the backend .env file.
-
-7️⃣ Quick User Flow
-
-Sign Up → Login
-
-Create a project → Add news URLs
-
-App analyzes articles automatically
-
-View results: Topics, Sentiment, Perspectives
-
-Manage your projects
+Navigation: It allows a viewer to click through different sections (via anchor tags) to find specific details about the project's topic.
