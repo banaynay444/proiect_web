@@ -1,34 +1,146 @@
- General Overview
+ # Attendance Tracking Web Application
 
- 
-The code in this repository represents a responsive front-end web application. It is built using standard web technologies (HTML5 and CSS3) and is designed to serve as a static landing page or informative website. The repository is categorized by GitHub as primarily a CSS-based project, indicating a heavy focus on custom styling, layouts, and visual design.
+A simple web application to track attendance for courses. This project includes a **Node.js + Express backend** with a **MySQL database**.
 
- Code Components
- 
-index.html: This is the heart of the project. It contains the semantic structure of the site. Based on common student/portfolio projects of this type, it likely includes:
 
-A Navigation Bar for site-wide links.
+ Features
 
-Section containers (e.g., <section>, <article>) to organize information.
+- User authentication (login)  
+- View professor's courses  
+- List students for a course  
+- Ready to extend for marking attendance  
 
-Media tags for images and potentially icons.
+---
 
-Form elements (like a contact section or a search bar).
+ Prerequisites
 
-CSS Stylesheets: The code utilizes custom CSS to handle the visual presentation. Key "actions" happening in the CSS include:
+- Node.js (v16+) and npm  
+- MySQL installed locally (XAMPP, WAMP, or native)  
+- Git (optional, for cloning the repository)  
 
-Flexbox/Grid Layouts: Used to align items and create a modern, structured look.
+---
 
-Media Queries: Ensuring the code is "responsive," meaning the website shifts its layout to look good on both wide computer monitors and narrow smartphone screens.
+Setup
 
-Styling Rules: Custom definitions for typography, color schemes, and hover effects on buttons.
+ Clone Repository
 
- What the Project "Does"
- 
-When the code is executed (opened in a browser), it renders a structured website. The primary purpose of this specific codebase is to:
+``bash
+git clone https://github.com/banaynay444/proiect_web.git
+cd proiect_web
 
-Present Information: It acts as a digital brochure or portfolio.
+Backend Setup
 
-User Interface (UI) Demonstration: It showcases the developer's ability to translate a design into clean, functional code.
+Install dependencies:
 
-Navigation: It allows a viewer to click through different sections (via anchor tags) to find specific details about the project's topic.
+npm install
+
+
+##Configure the MySQL database:
+
+Create a database called attendance_system
+
+##Create tables:
+
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(255) NOT NULL,
+  parola VARCHAR(255) NOT NULL,
+  rol ENUM('student','profesor') NOT NULL
+);
+
+CREATE TABLE courses (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  profesor_id INT,
+  nume_curs VARCHAR(255)
+);
+
+-- Optional: Enrollments table to link students and courses
+CREATE TABLE enrollments (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  student_id INT,
+  course_id INT
+);
+
+
+Update the database connection in server.js:
+
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '', // your MySQL password
+    database: 'attendance_system'
+});
+
+Running Backend
+node server.js
+
+
+The server runs at: http://localhost:3001
+
+You should see logs: Serverul rulează pe portul 3001 and Conectat la MySQL!
+
+API Endpoints
+Endpoint	Method	Description
+/api/login	POST	Log in user
+/api/profesor/cursuri/:id	GET	Get all courses assigned to a professor
+/api/curs/studenti/:cursId	GET	Get all students for a specific course
+Usage
+1. Login
+
+Send a POST request to /api/login:
+
+{
+  "email": "prof@example.com",
+  "password": "your_password"
+}
+
+
+Valid credentials → returns user object
+
+Invalid → { message: "User sau parolă incorecte!" }
+
+2. View Professor Courses
+
+GET /api/profesor/cursuri/:id
+
+Replace :id with professor ID
+
+Returns a list of courses for that professor
+
+3. View Students for a Course
+
+GET /api/curs/studenti/:cursId
+
+Returns all students (can later be filtered by enrolled students in that course)
+
+4. Mark Attendance
+
+Not yet implemented in this version
+
+Suggested approach:
+
+Create attendance table with student_id, course_id, date, status
+
+Add POST endpoint /api/curs/:cursId/attendance
+
+Future Improvements
+
+Implement full attendance marking system
+
+Create React frontend to interact with backend via API
+
+Add role-based access (professor vs student dashboards)
+
+Extend API to filter students by enrolled courses
+
+Notes
+
+Make sure MySQL server is running before starting the backend
+
+Use Postman or Axios to test API endpoints
+
+Backend is currently standalone; frontend can be added to consume these APIs
+
+  License
+
+MIT License
