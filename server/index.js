@@ -4,15 +4,15 @@ const cors = require('cors');
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // Ne lasă să primim date JSON de la React
-app.use(cors()); // Ne lasă să primim cereri de la alt port (Frontend)
+// --- MIDDLEWARE ---
+app.use(express.json()); // Permite primirea datelor JSON
+app.use(cors());         // Permite cereri de pe portul de Frontend (5173)
 
-// Conexiunea la Baza de Date
+// --- CONEXIUNEA LA BAZA DE DATE ---
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '', // Lasă gol dacă ești pe XAMPP default
+    password: '', // Lasă gol pentru XAMPP default
     database: 'attendance_system'
 });
 
@@ -20,24 +20,23 @@ db.connect((err) => {
     if (err) {
         console.error('Eroare conectare MySQL:', err);
     } else {
-        console.log('Conectat la MySQL!');
+        console.log('✅ Conectat la MySQL!');
     }
 });
 
-// --- RUTELE (API Endpoints) ---
+// ==========================================
+//                 RUTE API
+// ==========================================
 
-// 1. Ruta de Login (Verifică user și parolă)
+// 1. LOGIN
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
-
     const sql = "SELECT * FROM users WHERE email = ? AND parola = ?";
+    
     db.query(sql, [email, password], (err, result) => {
-        if (err) {
-            res.status(500).send({ error: err });
-        } 
+        if (err) return res.status(500).send({ error: err });
         
         if (result.length > 0) {
-            // Am găsit utilizatorul
             res.send(result[0]);
         } else {
             res.send({ message: "User sau parolă incorecte!" });
@@ -45,7 +44,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 2. Ruta pentru a lua cursurile unui profesor
+// 2. LISTA CURSURI (Pentru Profesor)
 app.get('/api/profesor/cursuri/:id', (req, res) => {
     const idProfesor = req.params.id;
     const sql = "SELECT * FROM courses WHERE profesor_id = ?";
@@ -56,23 +55,51 @@ app.get('/api/profesor/cursuri/:id', (req, res) => {
     });
 });
 
-// 3. Ruta pentru a vedea studenții de la un curs (pentru a face prezența)
+// 3. LISTA STUDENȚI LA UN CURS (Pentru a popula tabelul de prezență)
 app.get('/api/curs/studenti/:cursId', (req, res) => {
-    // Aici e un pic mai complex, trebuie să luăm studenții care au legătură cu acest curs.
-    // Pentru simplitate acum, luăm toți studenții. 
-    // Într-o variantă finală, am avea o tabelă 'enrollments'.
-    const sql = "SELECT * FROM users WHERE rol = 'student'"; 
+    // Luăm toți studenții (într-un app real, ar trebui filtrați după înscriere)
+    const sql = "SELECT * FROM users WHERE rol = 'student' ORDER BY nume ASC"; 
     
     db.query(sql, (err, result) => {
         if (err) console.log(err);
         res.send(result);
     });
 });
-// 5. Ruta pentru Dashboard STUDENT (Situația proprie)
+
+// 4. SALVARE PREZENȚĂ (Ruta care lipsea!)
+app.post('/api/prezenta', (req, res) => {
+    // Frontend-ul trebuie să trimită: { curs_id: 1, data: '2023-10-01', prezente: [{student_id: 2, status: 'prezent'}, ...] }
+    const { curs_id, data, prezente } = req.body;
+
+    if (!prezente || prezente.length === 0) {
+        return res.status(400).send({ message: "Nu sunt date de salvat." });
+    }
+
+    // Pregătim datele pentru inserare multiplă (Bulk Insert)
+    const values = prezente.map(p => [curs_id, p.student_id, data, p.status]);
+
+    const sql = "INSERT INTO attendance (curs_id, student_id, data, status) VALUES ?";
+
+    db.query(sql, [values], (err, result) => {
+        if (err) {
+            console.error("Eroare SQL:", err);
+            // Verificăm dacă e eroare de duplicat (dacă ai setat cheie unică pe dată+student)
+            if (err.code === 'ER_DUP_ENTRY') {
+                res.status(409).send({ message: "Prezența există deja pentru această dată!" });
+            } else {
+                res.status(500).send({ error: "Eroare la salvarea în baza de date." });
+            }
+        } else {
+            console.log("Prezență salvată!");
+            res.send({ message: "Salvat cu succes!" });
+        }
+    });
+});
+
+// 5. DASHBOARD STUDENT (Statistici proprii)
 app.get('/api/student/situatie/:studentId', (req, res) => {
     const studentId = req.params.studentId;
     
-    // Această interogare calculează totalurile pentru fiecare curs
     const sql = `
         SELECT 
             c.nume_curs,
@@ -87,45 +114,16 @@ app.get('/api/student/situatie/:studentId', (req, res) => {
     `;
 
     db.query(sql, [studentId], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).send("Eroare server");
-        } else {
-            res.send(result);
-        }
+        if (err) return res.status(500).send("Eroare server");
+        res.send(result);
     });
 });
 
-// 6. Ruta pentru Raport PROFESOR (Situația la un curs)
+// 6. RAPORT PROFESOR (Statistici pe curs)
 app.get('/api/profesor/raport/:cursId', (req, res) => {
     const cursId = req.params.cursId;
     
-    const sql = `
-        SELECT 
-            u.nume, u.prenume, u.grupa,
-            SUM(CASE WHEN a.status = 'prezent' THEN 1 ELSE 0 END) as prezente,
-            SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absente,
-            COUNT(a.id) as total_sesiuni
-        FROM attendance a
-        JOIN users u ON a.student_id = u.id
-        WHERE a.curs_id = ?
-        GROUP BY u.id
-        ORDER BY u.nume ASC
-    `;
-
-    db.query(sql, [cursId], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).send("Eroare server");
-        } else {
-            res.send(result);
-        }
-    });
-});
-// 1. Ruta pentru Raportul Profesorului (Lista studenților cu calcule)
-app.get('/api/profesor/raport/:cursId', (req, res) => {
-    const cursId = req.params.cursId;
-    // Această interogare numără câte prezențe, absențe și motivări are fiecare student la un curs
+    // LEFT JOIN e important ca să vedem și studenții care NU au nicio prezență încă
     const sql = `
         SELECT 
             u.id, u.nume, u.prenume, u.grupa,
@@ -141,38 +139,12 @@ app.get('/api/profesor/raport/:cursId', (req, res) => {
     `;
 
     db.query(sql, [cursId], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).send("Eroare server");
-        } else {
-            res.send(result);
-        }
-    });
-});
-
-// 2. Ruta pentru Dashboard-ul Studentului (Situația proprie)
-app.get('/api/student/situatie/:studentId', (req, res) => {
-    const studentId = req.params.studentId;
-    
-    // Vedem cursurile și prezența la fiecare
-    const sql = `
-        SELECT 
-            c.nume_curs,
-            SUM(CASE WHEN a.status = 'prezent' THEN 1 ELSE 0 END) as prezente,
-            SUM(CASE WHEN a.status = 'absent' THEN 1 ELSE 0 END) as absente
-        FROM attendance a
-        JOIN courses c ON a.curs_id = c.id
-        WHERE a.student_id = ?
-        GROUP BY c.id
-    `;
-    
-    db.query(sql, [studentId], (err, result) => {
-        if (err) return res.status(500).send(err);
+        if (err) return res.status(500).send("Eroare server");
         res.send(result);
     });
 });
 
-// Pornirea Serverului
+// --- PORNIRE SERVER ---
 app.listen(3001, () => {
-    console.log('Serverul rulează pe portul 3001');
+    console.log('🚀 Serverul rulează pe portul 3001');
 });
