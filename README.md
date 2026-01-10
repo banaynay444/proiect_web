@@ -106,7 +106,7 @@ cd client
 npm install      # Instalează dependențele
 npm run dev      # Pornește aplicația React
 Accesează aplicația la: http://localhost:5173
-
+```
 ## 📸 Previzualizare (Structură Pagini)
 / - Pagina de Login (Centrată, cu gradient de fundal).
 
