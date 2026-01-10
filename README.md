@@ -107,7 +107,7 @@ npm install      # Instalează dependențele
 npm run dev      # Pornește aplicația React
 Accesează aplicația la: http://localhost:5173
 
-📸 Previzualizare (Structură Pagini)
+## 📸 Previzualizare (Structură Pagini)
 / - Pagina de Login (Centrată, cu gradient de fundal).
 
 /register - Pagina de Înregistrare cont nou.
@@ -120,5 +120,5 @@ Accesează aplicația la: http://localhost:5173
 
 /raport/:id - Tabelul detaliat cu situația studenților.
 
-👤 Autor
+## 👤 Autor
 Proiect realizat de [Numele Tău]. Dezvoltat ca proiect universitar pentru disciplina Tehnologii Web.
