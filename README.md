@@ -121,4 +121,4 @@ Accesează aplicația la: http://localhost:5173
 /raport/:id - Tabelul detaliat cu situația studenților.
 
 ## 👤 Autor
-Proiect realizat de [Numele Tău]. Dezvoltat ca proiect universitar pentru disciplina Tehnologii Web.
+Proiect realizat de Grigore Ana Maria, Aslam Andra si Muntianu Vanessa. Dezvoltat ca proiect universitar pentru disciplina Tehnologii Web.
