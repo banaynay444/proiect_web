@@ -1,89 +1,235 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import '../App.css';
 
 function Prezenta() {
-  const { cursId } = useParams();
-  const navigate = useNavigate();
-  const [studenti, setStudenti] = useState([]);
-  const [dataAzi, setDataAzi] = useState(new Date().toISOString().slice(0, 10));
-  const [loading, setLoading] = useState(true);
+    const { id } = useParams();
+    const navigate = useNavigate();
+    
+    const [studenti, setStudenti] = useState([]);
+    const [dataCurenta, setDataCurenta] = useState(new Date().toISOString().split('T')[0]);
+    const [searchTerm, setSearchTerm] = useState(""); // <-- State pentru căutare
+    
+    const [prezente, setPrezente] = useState({}); 
+    const [selected, setSelected] = useState({});
 
-  useEffect(() => {
-    // Cerem lista simplă de studenți
-    axios.get(`http://localhost:3001/api/curs/studenti/${cursId}`)
-      .then(res => {
-        // Le atașăm un status default 'absent' pentru formular
-        const date = res.data.map(s => ({ ...s, status: 'absent' }));
-        setStudenti(date);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, [cursId]);
+    // Luăm lista de studenți
+    useEffect(() => {
+        axios.get(`http://localhost:3001/api/curs/studenti/${id}`)
+            .then(res => {
+                setStudenti(res.data);
+                
+                const statusInitial = {};
+                const selectedInitial = {};
+                
+                res.data.forEach(s => {
+                    statusInitial[s.id] = 'prezent';
+                    selectedInitial[s.id] = false;
+                });
+                
+                setPrezente(statusInitial);
+                setSelected(selectedInitial);
+            })
+            .catch(err => console.error(err));
+    }, [id]);
 
-  const handleStatusChange = (index, status) => {
-    const newStudenti = [...studenti];
-    newStudenti[index].status = status;
-    setStudenti(newStudenti);
-  };
+    // --- LOGICA DE FILTRARE ---
+    const filteredStudenti = studenti.filter(s => 
+        (s.nume + ' ' + s.prenume).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.grupa && s.grupa.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
-  const salveaza = async () => {
-    try {
-        const payload = {
-            curs_id: cursId,
-            data: dataAzi,
-            prezente: studenti.map(s => ({ student_id: s.id, status: s.status }))
-        };
-        await axios.post('http://localhost:3001/api/prezenta', payload);
-        alert("Prezență salvată!");
-        navigate(-1);
-    } catch (e) {
-        alert("Eroare la salvare");
-    }
-  };
+    // Verificăm dacă toți studenții FILTRAȚI sunt selectați
+    const areToateSelectate = filteredStudenti.length > 0 && filteredStudenti.every(s => selected[s.id]);
 
-  if (loading) return <div className="page-container">Se încarcă...</div>;
+    // Selectează / Deselectează doar studenții vizibili (filtrați)
+    const toggleSelectAll = () => {
+        const newState = { ...selected };
+        filteredStudenti.forEach(s => {
+            newState[s.id] = !areToateSelectate;
+        });
+        setSelected(newState);
+    };
 
-  return (
-    <div className="page-container">
-      <button className="btn" onClick={() => navigate(-1)} style={{background: '#9ca3af', marginBottom: '20px'}}>Inapoi</button>
-      <div className="card">
-        <h2>Fă Prezența - Data: <input type="date" value={dataAzi} onChange={e => setDataAzi(e.target.value)}/></h2>
-        
-        {studenti.length === 0 ? (
-            <p>Nu există studenți înregistrați în baza de date.</p>
-        ) : (
-            <div className="table-container">
-            <table>
-                <thead>
-                <tr>
-                    <th>Student</th>
-                    <th style={{textAlign:'center', color:'green'}}>Prezent</th>
-                    <th style={{textAlign:'center', color:'red'}}>Absent</th>
-                    <th style={{textAlign:'center', color:'orange'}}>Motivat</th>
-                </tr>
-                </thead>
-                <tbody>
-                {studenti.map((s, idx) => (
-                    <tr key={s.id}>
-                    <td>{s.nume} {s.prenume}</td>
-                    <td align="center"><input type="radio" name={'s'+s.id} checked={s.status==='prezent'} onChange={()=>handleStatusChange(idx,'prezent')} /></td>
-                    <td align="center"><input type="radio" name={'s'+s.id} checked={s.status==='absent'} onChange={()=>handleStatusChange(idx,'absent')} /></td>
-                    <td align="center"><input type="radio" name={'s'+s.id} checked={s.status==='motivat'} onChange={()=>handleStatusChange(idx,'motivat')} /></td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+    const toggleSelect = (studentId) => {
+        setSelected(prev => ({ ...prev, [studentId]: !prev[studentId] }));
+    };
+
+    const handleStatusChange = (studentId, status) => {
+        setPrezente(prev => ({ ...prev, [studentId]: status }));
+    };
+
+    const salveaza = () => {
+        const listaFinala = studenti // Aici trimitem din toți studenții, nu doar cei filtrați
+            .filter(s => selected[s.id]) 
+            .map(s => ({
+                student_id: s.id,
+                status: prezente[s.id]
+            }));
+
+        if (listaFinala.length === 0) {
+            alert("⚠️ Nu ai selectat niciun student!");
+            return;
+        }
+
+        axios.post('http://localhost:3001/api/prezenta', {
+            curs_id: id,
+            data: dataCurenta,
+            prezente: listaFinala
+        })
+        .then(() => {
+            alert(`✅ Prezența salvată pentru ${listaFinala.length} studenți!`);
+            navigate(-1);
+        })
+        .catch(err => {
+            console.error(err);
+            if (err.response && err.response.status === 409) {
+                alert("⚠️ Există deja o prezență salvată pentru această dată!");
+            } else {
+                alert("❌ Eroare la salvare.");
+            }
+        });
+    };
+
+    const getStatusColor = (status, isSelected) => {
+        if (!isSelected) return '#f9fafb'; 
+        switch(status) {
+            case 'prezent': return 'rgba(16, 185, 129, 0.1)';
+            case 'absent': return 'rgba(239, 68, 68, 0.1)';
+            case 'motivat': return 'rgba(245, 158, 11, 0.1)';
+            default: return 'white';
+        }
+    };
+
+    return (
+        <div className="dashboard-container" style={{maxWidth: '800px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                <button className="secondary" onClick={() => navigate(-1)} style={{width: 'auto'}}>
+                    ⬅️ Înapoi
+                </button>
+                <h2 style={{margin: 0}}>📝 Fă Prezența</h2>
             </div>
-        )}
-        <button className="btn btn-success" style={{marginTop:'20px', width:'100%'}} onClick={salveaza}>Salvează</button>
-      </div>
-    </div>
-  );
+
+            {/* ZONA DE CONTROALE (Data + Căutare) */}
+            <div className="auth-card" style={{margin: '0 auto 1.5rem auto', padding: '1.5rem'}}>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', alignItems: 'end'}}>
+                    
+                    {/* Selector Data */}
+                    <div>
+                        <label style={{fontSize: '0.9rem', display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>📅 Data:</label>
+                        <input 
+                            type="date" 
+                            value={dataCurenta} 
+                            onChange={e => setDataCurenta(e.target.value)} 
+                            style={{padding: '10px'}}
+                        />
+                    </div>
+
+                    {/* Căutare Student */}
+                    <div>
+                        <label style={{fontSize: '0.9rem', display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>🔍 Caută student:</label>
+                        <input 
+                            type="text" 
+                            placeholder="Nume sau Grupă..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{padding: '10px', width: '100%'}}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Buton Select All */}
+            <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <span style={{fontSize: '0.9rem', color: '#666'}}>
+                    Se afișează {filteredStudenti.length} din {studenti.length} studenți
+                </span>
+                <button 
+                    onClick={toggleSelectAll} 
+                    className="secondary" 
+                    style={{width: 'auto', fontSize: '0.9rem', padding: '8px 15px'}}
+                >
+                    {areToateSelectate ? "❌ Deselectează Lista" : "✅ Selectează Lista"}
+                </button>
+            </div>
+            
+            {/* Lista Studenți */}
+            <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                {filteredStudenti.length === 0 ? (
+                    <p style={{textAlign: 'center', color: '#888'}}>Nu am găsit niciun student.</p>
+                ) : (
+                    filteredStudenti.map(s => {
+                        const isSelected = selected[s.id];
+                        return (
+                            <div 
+                                key={s.id} 
+                                className="auth-card"
+                                style={{
+                                    margin: 0, padding: '1rem',
+                                    display: 'flex', alignItems: 'center',
+                                    backgroundColor: getStatusColor(prezente[s.id], isSelected),
+                                    border: isSelected ? '1px solid #4f46e5' : '1px solid #e5e7eb',
+                                    opacity: isSelected ? 1 : 0.6, 
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                <input 
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleSelect(s.id)}
+                                    style={{width: '20px', height: '20px', marginRight: '15px', cursor: 'pointer', accentColor: '#4f46e5'}}
+                                />
+
+                                <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '15px'}}>
+                                    <div style={{
+                                        width: '35px', height: '35px', 
+                                        background: isSelected ? '#4f46e5' : '#9ca3af', 
+                                        color: 'white', borderRadius: '50%', 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        {isSelected ? '👤' : '✖'}
+                                    </div>
+                                    <div>
+                                        <h4 style={{margin: 0}}>{s.nume} {s.prenume}</h4>
+                                        <span style={{fontSize: '0.85rem', color: '#6b7280'}}>
+                                            {s.serie ? `Seria ${s.serie}` : ''} {s.grupa ? `• Grupa ${s.grupa}` : ''}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div style={{width: '140px'}}>
+                                    <select 
+                                        value={prezente[s.id]} 
+                                        onChange={(e) => handleStatusChange(s.id, e.target.value)}
+                                        disabled={!isSelected} 
+                                        style={{
+                                            padding: '8px', borderRadius: '8px',
+                                            fontWeight: 'bold', cursor: isSelected ? 'pointer' : 'not-allowed',
+                                            backgroundColor: 'white'
+                                        }}
+                                    >
+                                        <option value="prezent">✅ Prezent</option>
+                                        <option value="absent">❌ Absent</option>
+                                        <option value="motivat">📄 Motivat</option>
+                                    </select>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            <button 
+                onClick={salveaza} 
+                style={{
+                    marginTop: '20px', padding: '15px', fontSize: '1.1rem',
+                    background: 'linear-gradient(to right, #4f46e5, #7c3aed)'
+                }}
+            >
+                💾 Salvează Selecția
+            </button>
+        </div>
+    );
 }
 
 export default Prezenta;

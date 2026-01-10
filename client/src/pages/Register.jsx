@@ -4,111 +4,71 @@ import { useNavigate, Link } from 'react-router-dom';
 
 function Register() {
     const navigate = useNavigate();
-    
     const [formData, setFormData] = useState({
-        nume: '', prenume: '', email: '', parola: '', repeatParola: '',
-        rol: 'student', grupa: '', serie: '', an: ''
+        nume: '', prenume: '', email: '', parola: '',
+        rol: 'student', grupa: '', an: '', serie: ''
     });
-    const [error, setError] = useState('');
+    const [msg, setMsg] = useState('');
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
-    const handleRegister = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-
-        if (formData.parola !== formData.repeatParola) {
-            setError("Parolele nu coincid!");
-            return;
+        try {
+            const res = await axios.post('http://localhost:3001/api/register', formData);
+            if (res.data.message === 'Succes') {
+                alert("Cont creat! Te rugăm să te autentifici.");
+                navigate('/');
+            } else {
+                setMsg(res.data.message);
+            }
+        } catch (err) {
+            setMsg("Eroare server.");
         }
-
-        // Trimitem datele la server
-        axios.post('http://localhost:3001/api/register', formData)
-            .then(res => {
-                if (res.data.message.includes("folosit")) {
-                    setError(res.data.message);
-                } else {
-                    alert("Cont creat cu succes!");
-                    navigate('/'); // Mergem la login
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                setError("Eroare la înregistrare.");
-            });
     };
 
     return (
         <div className="auth-container">
-            <div className="auth-card" style={{ maxWidth: '500px' }}>
-                <h2>Creează Cont Nou 🚀</h2>
-                
-                <form onSubmit={handleRegister}>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <div className="form-group" style={{ flex: 1 }}>
-                            <label>Nume</label>
-                            <input name="nume" onChange={handleChange} required />
-                        </div>
-                        <div className="form-group" style={{ flex: 1 }}>
-                            <label>Prenume</label>
-                            <input name="prenume" onChange={handleChange} required />
+            <div className="auth-card">
+                <h2>Înregistrare</h2>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label>Nume & Prenume</label>
+                        <div style={{display:'flex', gap:'10px'}}>
+                            <input name="nume" placeholder="Nume" onChange={handleChange} required />
+                            <input name="prenume" placeholder="Prenume" onChange={handleChange} required />
                         </div>
                     </div>
-
+                    
                     <div className="form-group">
                         <label>Email</label>
-                        <input type="email" name="email" onChange={handleChange} required />
+                        <input name="email" type="email" onChange={handleChange} required />
                     </div>
 
                     <div className="form-group">
-                        <label>Tip Cont</label>
-                        <select name="rol" value={formData.rol} onChange={handleChange}>
+                        <label>Rol</label>
+                        <select name="rol" onChange={handleChange} value={formData.rol}>
                             <option value="student">Student</option>
                             <option value="profesor">Profesor</option>
                         </select>
                     </div>
 
-                    {/* Campuri Conditionale doar pentru Studenti */}
                     {formData.rol === 'student' && (
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <div className="form-group" style={{ flex: 1 }}>
-                                <label>An</label>
-                                <select name="an" onChange={handleChange}>
-                                    <option value="">Alege</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
-                            </div>
-                            <div className="form-group" style={{ flex: 1 }}>
-                                <label>Serie</label>
-                                <input name="serie" placeholder="Ex: A" onChange={handleChange} />
-                            </div>
-                            <div className="form-group" style={{ flex: 1 }}>
-                                <label>Grupa</label>
-                                <input name="grupa" placeholder="Ex: 1045" onChange={handleChange} />
-                            </div>
+                        <div className="form-group" style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px'}}>
+                            <input name="an" placeholder="An (1-4)" onChange={handleChange} />
+                            <input name="serie" placeholder="Serie (A)" onChange={handleChange} />
+                            <input name="grupa" placeholder="Grupa" onChange={handleChange} />
                         </div>
                     )}
 
                     <div className="form-group">
                         <label>Parolă</label>
-                        <input type="password" name="parola" onChange={handleChange} required />
+                        <input name="parola" type="password" onChange={handleChange} required />
                     </div>
 
-                    <div className="form-group">
-                        <label>Repetă Parolă</label>
-                        <input type="password" name="repeatParola" onChange={handleChange} required />
-                    </div>
-
-                    {error && <div className="error-msg">{error}</div>}
-
-                    <button type="submit">Înregistrează-te</button>
+                    <p style={{color:'red', textAlign:'center'}}>{msg}</p>
+                    <button type="submit">Creează Cont</button>
                 </form>
-
                 <Link to="/">
                     <button className="secondary">Ai deja cont? Logare</button>
                 </Link>
@@ -116,5 +76,4 @@ function Register() {
         </div>
     );
 }
-
 export default Register;
