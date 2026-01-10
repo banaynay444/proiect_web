@@ -1,53 +1,69 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../App.css';
 
 function ProfesorDashboard() {
-  const { id } = useParams(); // Luăm ID-ul profesorului din URL
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [cursuri, setCursuri] = useState([]);
+  const user = JSON.parse(localStorage.getItem('user')) || {};
 
   useEffect(() => {
-    // Când se încarcă pagina, cerem cursurile de la server
     axios.get(`http://localhost:3001/api/profesor/cursuri/${id}`)
-      .then((response) => {
-        setCursuri(response.data);
-      })
-      .catch((error) => {
-        console.error("Eroare la preluarea cursurilor:", error);
-      });
+      .then((response) => setCursuri(response.data))
+      .catch((error) => console.error(error));
   }, [id]);
 
+  const handleLogout = () => {
+      localStorage.removeItem('user');
+      navigate('/');
+  }
+
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Panou Profesor</h1>
-      <h3>Cursurile mele:</h3>
-      
-      {cursuri.length === 0 ? (
-        <p>Nu aveți cursuri asignate.</p>
-      ) : (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-          {cursuri.map((curs) => (
-            <div key={curs.id} style={cardStyle}>
-              <h4>{curs.nume_curs}</h4>
-              <p>ID Curs: {curs.id}</p>
-              {/* Aici vom adăuga butonul de prezență mai târziu */}
-              <button onClick={() => alert(`Deschide prezența pentru ${curs.nume_curs}`)}>
-                Fă Prezența
-              </button>
-            </div>
-          ))}
+    <div className="page-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+            <h1>Salut, Prof. {user.nume}! 👋</h1>
+            <p className="text-light">Selectează un curs pentru a face prezența.</p>
         </div>
-      )}
+        <button onClick={handleLogout} className="btn" style={{background: '#ef4444'}}>Logout</button>
+      </div>
+      
+      <div className="dashboard-grid">
+        {cursuri.length === 0 ? (
+          <p>Nu există cursuri asignate.</p>
+        ) : (
+          cursuri.map((curs) => (
+            <div key={curs.id} className="card">
+              <h3 style={{marginTop: 0}}>{curs.nume_curs}</h3>
+              <p style={{ color: '#6b7280', fontSize: '14px' }}>ID Curs: #{curs.id}</p>
+              <div style={{ marginTop: '20px' }}>
+                  <button 
+                    className="btn btn-primary btn-block"
+                    onClick={() => navigate(`/prezenta/${curs.id}`)}
+                  >
+                    📝 Fă Prezența
+                  </button>
+                  {/* Buton Nou */}
+    <button 
+      className="btn btn-block"
+      style={{ background: '#6366f1', color: 'white' }}
+      onClick={() => navigate(`/raport/${curs.id}`)}
+    >
+      📊 Vezi Raport
+    </button>
+    <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+    <button className="btn btn-primary" onClick={() => navigate(`/prezenta/${curs.id}`)}>Prezență</button>
+    <button className="btn" style={{background: '#6366f1'}} onClick={() => navigate(`/raport/${curs.id}`)}>Raport</button>
+</div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
-
-const cardStyle = {
-  border: '1px solid #ddd',
-  borderRadius: '8px',
-  padding: '15px',
-  width: '200px',
-  boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-};
 
 export default ProfesorDashboard;
