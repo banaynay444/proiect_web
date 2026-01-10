@@ -1,27 +1,21 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
+import Register from './pages/Register'; // <-- Import nou
 import ProfesorDashboard from './pages/ProfesorDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import Prezenta from './pages/Prezenta';
-import RaportCurs from './pages/RaportCurs'; // <--- Import Nou
+import RaportCurs from './pages/RaportCurs';
 
 function App() {
   return (
-    <Router>
-      <div className="app-container"> {/* Am adăugat clasa CSS globală */}
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/profesor/:id" element={<ProfesorDashboard />} />
-          <Route path="/student/:id" element={<StudentDashboard />} />
-          <Route path="/prezenta/:cursId" element={<Prezenta />} />
-          
-          {/* Ruta Nouă pentru Raport */}
-          <Route path="/raport/:cursId" element={<RaportCurs />} />
-          
-        </Routes>
-      </div>
-    </Router>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} /> {/* <-- Ruta nouă */}
+      <Route path="/profesor/:id" element={<ProfesorDashboard />} />
+      <Route path="/student/:id" element={<StudentDashboard />} />
+      <Route path="/prezenta/:id" element={<Prezenta />} />
+      <Route path="/raport/:id" element={<RaportCurs />} />
+    </Routes>
   );
 }
 
