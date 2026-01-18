@@ -10,7 +10,7 @@ O aplicație web modernă și intuitivă pentru gestionarea prezențelor la curs
 
 ## ✨ Funcționalități Principale
 
-### 🔐 Autentificare & Securitate
+### 🔐 Autentificare si Securitate
 * **Login Securizat:** Sistem de autentificare cu verificare a rolului (Profesor vs. Student). Nu permite unui student să se logheze pe interfața de profesor și invers.
 * **Înregistrare (Register):** Formular de creare cont cu câmpuri dinamice. Dacă selectezi "Student", apar automat câmpuri specifice (An, Serie, Grupă).
 * **Validări:** Verificare unicitate email, confirmare parolă.
